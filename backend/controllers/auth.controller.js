@@ -55,9 +55,6 @@ export async function register(req, res) {
         const salt = await bcryptjs.genSalt(10)
         const hashedPassword = await bcryptjs.hash(password, salt)
 
-        const PROFILE_PIC = ["/img1.png", "/img2.png", "/img3.png"]
-        const image = PROFILE_PIC[Math.floor(Math.random() * PROFILE_PIC.length)]
-
         const user = new User({ username, email, password: hashedPassword, image })
         generateToken(user._id, res)
         await user.save()
