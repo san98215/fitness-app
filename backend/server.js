@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser'
 // Routes
 import authRoutes from './routes/auth.route.js'
 import exerciseRoutes from './routes/exercise.route.js'
+import workoutRoutes from './routes/workout.route.js'
 
 import ENVS from './config/env.js'
 import dbConnect from './config/db.js'
@@ -21,8 +22,7 @@ app.use(cookieParser()) // Middleware to parse cookies
 // Define routes
 app.use("/auth", authRoutes)
 app.use("/exercise", exerciseRoutes)
-// app.use("/movies", mediaRoutes)
-// app.use("/tv", mediaRoutes)
+app.use("/workouts", workoutRoutes)
 
 app.listen(PORT, () => {
   console.log('Server running on port', PORT)
