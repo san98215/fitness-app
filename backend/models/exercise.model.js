@@ -1,13 +1,18 @@
 import mongoose from 'mongoose'
 
 const exerciseSchema = new mongoose.Schema({
+    id: {
+        type: String,
+        required: true
+    },
     index: {
         type: Number,
-        required: true
     },
     name: {
         type: String,
-        required: true
+    },
+    notes: {
+        type: String,
     },
     sets: [{
         type: mongoose.Schema.Types.ObjectId,

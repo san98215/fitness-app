@@ -21,7 +21,7 @@ app.use(cookieParser()) // Middleware to parse cookies
 
 // Define routes
 app.use("/auth", authRoutes)
-app.use("/exercise", exerciseRoutes)
+app.use("/exercises", exerciseRoutes)
 app.use("/workouts", workoutRoutes)
 
 app.listen(PORT, () => {
