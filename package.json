@@ -5,22 +5,27 @@
   "type": "module",
   "dependencies": {
     "axios": "^1.7.9",
-    "bcryptjs": "^2.4.3",
+    "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.7",
-    "cra-template": "1.2.0",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.9.6",
     "nodemon": "^3.1.9",
+    "pg": "^8.13.3",
+    "pg-hstore": "^2.3.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-scripts": "^5.0.1"
+    "react-scripts": "^5.0.1",
+    "sequelize": "^6.37.5",
+    "sequelize-cli": "^6.6.2"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "cross-env NODE_ENV=test jest --config ./config/jest.config.js --detectOpenHandles",
+    "test:watch": "cross-env NODE_ENV=test jest --watch --detectOpenHandles",
+    "test:coverage": "cross-env NODE_ENV=test jest --coverage --detectOpenHandles",
     "eject": "react-scripts eject",
     "dev": "nodemon backend/server.js"
   },
@@ -41,5 +46,14 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.9",
+    "@babel/plugin-transform-modules-commonjs": "^7.26.3",
+    "@babel/preset-env": "^7.26.9",
+    "babel-jest": "^29.7.0",
+    "cross-env": "^7.0.3",
+    "jest": "^27.5.1",
+    "supertest": "^7.0.0"
   }
 }

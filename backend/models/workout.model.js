@@ -1,51 +1,33 @@
-import mongoose, { set } from 'mongoose'
+import { Model, DataTypes } from 'sequelize';
 
-const setSchema = new mongoose.Schema({
-    index: {
-        type: Number,
-        required: true
-    },
-    weight: {
-        type: Number,
-        required: true
-    },
-    reps: {
-        type: Number,
-        required: true
-    },
-    type: {
-        type: String,
-        required: true
+export class Workout extends Model {
+    static initialize(sequelize) {
+        Workout.init({
+            id: {
+                type: DataTypes.UUID,
+                defaultValue: DataTypes.UUIDV4,
+                primaryKey: true
+            },
+            date: {
+                type: DataTypes.DATE,
+                allowNull: false,
+                defaultValue: DataTypes.NOW
+            },
+            duration: {
+                type: DataTypes.INTEGER,
+                allowNull: true
+            },
+            userId: {
+                type: DataTypes.UUID,
+                allowNull: false
+            },
+            notes: {
+                type: DataTypes.TEXT,
+                allowNull: true
+            }
+        }, {
+            sequelize,
+            modelName: 'Workout'
+        });
     }
-}, { _id: false })
-
-const exerciseSchema = new mongoose.Schema({
-    id: {
-        type: String,
-        required: true
-    },
-    index: {
-        type: Number,
-    },
-    name: {
-        type: String,
-    },
-    notes: {
-        type: String,
-    },
-    sets: [setSchema]
-}, { _id: false })
-
-const workoutSchema = new mongoose.Schema({
-    date: {
-        type: Date,
-        required: true
-    },
-    duration: {
-        type: Number,
-        required: true
-    },
-    exercises: [exerciseSchema],
-})
-
-export const Workout = mongoose.model('Workout', workoutSchema)
+}
