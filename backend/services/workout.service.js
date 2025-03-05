@@ -3,6 +3,7 @@ import { Workout } from '../models/workout.model.js';
 import { Exercise } from '../models/exercise.model.js';
 import { Set } from '../models/set.model.js';
 import sequelize from '../../config/database.js';
+import { Op } from 'sequelize';
 
 class WorkoutService extends BaseService {
     constructor() {
@@ -10,124 +11,113 @@ class WorkoutService extends BaseService {
     }
 
     async createWorkout(workoutData) {
-        const transaction = await sequelize.transaction();
-        try {
-            const { exercises = [], ...workoutDetails } = workoutData;
-            
-            // Create workout
-            const workout = await this.create(workoutDetails, { transaction });
+        const workout = await Workout.create(workoutData);
 
-            // Create exercises and their sets
-            for (const exerciseData of exercises) {
-                const { sets = [], ...exerciseDetails } = exerciseData;
-                
-                const exercise = await Exercise.create({
-                    ...exerciseDetails,
-                    workoutId: workout.id
-                }, { transaction });
-
-                if (sets.length > 0) {
-                    await Set.bulkCreate(
-                        sets.map(set => ({
-                            ...set,
-                            exerciseId: exercise.id
-                        })),
-                        { transaction }
-                    );
-                }
-            }
-
-            await transaction.commit();
-            return this.getWorkoutWithDetails(workout.id);
-        } catch (error) {
-            await transaction.rollback();
-            throw error;
+        // If exercises are included in the workout data, add them
+        if (workoutData.exercises && workoutData.exercises.length > 0) {
+            await this.addExercises(workout.id, workoutData.exercises);
         }
+
+        return this.getWorkoutWithDetails(workout.id);
     }
 
     async getWorkoutWithDetails(workoutId) {
-        try {
-            return await this.findOne({
-                where: { id: workoutId },
-                include: [{
-                    model: Exercise,
-                    as: 'exercises',
-                    include: [{
-                        model: Set,
-                        as: 'sets'
-                    }]
-                }]
-            });
-        } catch (error) {
-            throw error;
-        }
+        return await Workout.findByPk(workoutId, {
+            include: [{
+                model: Exercise,
+                as: 'exercises',
+                through: {
+                    attributes: ['sets', 'reps', 'weight']
+                }
+            }]
+        });
     }
 
     async getUserWorkouts(userId) {
-        try {
-            return await this.findAll({
-                where: { userId },
-                include: [{
-                    model: Exercise,
-                    as: 'exercises',
-                    include: [{
-                        model: Set,
-                        as: 'sets'
-                    }]
-                }],
-                order: [
-                    ['date', 'DESC'],
-                    ['exercises', 'order', 'ASC'],
-                    ['exercises', 'sets', 'order', 'ASC']
-                ]
-            });
-        } catch (error) {
-            throw error;
-        }
+        return await Workout.findAll({
+            where: { userId },
+            order: [['date', 'DESC']],
+            include: ['exercises']
+        });
     }
 
     async updateWorkout(workoutId, updateData) {
-        const transaction = await sequelize.transaction();
-        try {
-            const { exercises = [], ...workoutDetails } = updateData;
-            
-            // Update workout details
-            await this.update(workoutId, workoutDetails, { transaction });
-
-            if (exercises.length > 0) {
-                // Delete existing exercises and their sets (cascade will handle sets)
-                await Exercise.destroy({
-                    where: { workoutId },
-                    transaction
-                });
-
-                // Create new exercises and their sets
-                for (const exerciseData of exercises) {
-                    const { sets = [], ...exerciseDetails } = exerciseData;
-                    
-                    const exercise = await Exercise.create({
-                        ...exerciseDetails,
-                        workoutId
-                    }, { transaction });
-
-                    if (sets.length > 0) {
-                        await Set.bulkCreate(
-                            sets.map(set => ({
-                                ...set,
-                                exerciseId: exercise.id
-                            })),
-                            { transaction }
-                        );
-                    }
-                }
-            }
-
-            await transaction.commit();
-            return this.getWorkoutWithDetails(workoutId);
-        } catch (error) {
-            await transaction.rollback();
-            throw error;
+        const workout = await Workout.findByPk(workoutId);
+        
+        if (!workout) {
+            throw new Error('Workout not found');
         }
+
+        // Update basic workout details
+        await workout.update(updateData);
+
+        // If exercises are included in the update data, update them
+        if (updateData.exercises) {
+            // Remove existing exercises
+            await workout.setExercises([]);
+            // Add new exercises
+            await this.addExercises(workoutId, updateData.exercises);
+        }
+
+        return this.getWorkoutWithDetails(workoutId);
+    }
+
+    async delete(workoutId) {
+        const workout = await Workout.findByPk(workoutId);
+        
+        if (!workout) {
+            throw new Error('Workout not found');
+        }
+
+        await workout.destroy();
+    }
+
+    async findById(workoutId) {
+        return await Workout.findByPk(workoutId);
+    }
+
+    async findAll(options) {
+        return await Workout.findAll(options);
+    }
+
+    async addExercise(workoutId, exerciseData) {
+        const workout = await Workout.findByPk(workoutId);
+        
+        if (!workout) {
+            throw new Error('Workout not found');
+        }
+
+        const { exerciseId, sets, reps, weight } = exerciseData;
+        await workout.addExercise(exerciseId, {
+            through: { sets, reps, weight }
+        });
+
+        return this.getWorkoutWithDetails(workoutId);
+    }
+
+    async addExercises(workoutId, exercises) {
+        const workout = await Workout.findByPk(workoutId);
+        
+        if (!workout) {
+            throw new Error('Workout not found');
+        }
+
+        for (const exercise of exercises) {
+            const { exerciseId, sets, reps, weight } = exercise;
+            await workout.addExercise(exerciseId, {
+                through: { sets, reps, weight }
+            });
+        }
+    }
+
+    async removeExercise(workoutId, exerciseId) {
+        const workout = await Workout.findByPk(workoutId);
+        
+        if (!workout) {
+            throw new Error('Workout not found');
+        }
+
+        await workout.removeExercise(exerciseId);
     }
 }
 

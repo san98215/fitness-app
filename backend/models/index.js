@@ -1,57 +1,53 @@
-'use strict';
+import sequelize from '../../config/database.js';
+import { User } from './user.model.js';
+import { Workout } from './workout.model.js';
+import { Exercise } from './exercise.model.js';
+import { WorkoutExercise } from './workout-exercise.model.js';
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { Sequelize } from 'sequelize';
-import { ENVS } from '../../config/env.js';
+// Initialize models
+const models = {
+    User,
+    Workout,
+    Exercise,
+    WorkoutExercise
+};
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const basename = path.basename(__filename);
-
-// Create Sequelize instance
-const sequelize = new Sequelize({
-    database: process.env.NODE_ENV === 'test' ? `${ENVS.POSTGRES_DB}_test` : ENVS.POSTGRES_DB,
-    username: ENVS.POSTGRES_USER,
-    password: ENVS.POSTGRES_PASSWORD,
-    host: ENVS.POSTGRES_HOST,
-    port: ENVS.POSTGRES_PORT,
-    dialect: 'postgres',
-    logging: false
-});
-
-// Initialize models container
-const models = {};
-
-// Import all models
-const modelFiles = fs
-    .readdirSync(__dirname)
-    .filter(file => {
-        return (
-            file.indexOf('.') !== 0 &&
-            file !== basename &&
-            file.slice(-3) === '.js' &&
-            !file.includes('.test.js')
-        );
-    });
-
-// Load models
-for (const file of modelFiles) {
-    const modelModule = await import(path.join(__dirname, file));
-    const model = modelModule.default || modelModule[Object.keys(modelModule)[0]];
-    if (model && model.initialize) {
-        model.initialize(sequelize);
-        models[model.name] = model;
-    }
-}
-
-// Set up associations
+// Initialize each model
 Object.values(models).forEach(model => {
-    if (model.associate) {
-        model.associate(models);
+    if (model.init) {
+        model.init(model.schema, { 
+            sequelize,
+            ...model.options
+        });
     }
 });
 
-export { sequelize };
-export default models;
+// Define associations
+Workout.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'user'
+});
+
+User.hasMany(Workout, {
+    foreignKey: 'userId',
+    as: 'workouts'
+});
+
+Workout.belongsToMany(Exercise, {
+    through: WorkoutExercise,
+    as: 'exercises',
+    foreignKey: 'workoutId'
+});
+
+Exercise.belongsToMany(Workout, {
+    through: WorkoutExercise,
+    as: 'workouts',
+    foreignKey: 'exerciseId'
+});
+
+export {
+    User,
+    Workout,
+    Exercise,
+    WorkoutExercise
+}; 

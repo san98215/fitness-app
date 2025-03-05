@@ -1,35 +1,34 @@
 import request from 'supertest';
-import app, { startServer } from '../server.js';
-import { initializeTestDatabase, cleanupTestDatabase } from './setup.js';
+import app from '../server.js';
+import { setupTestDatabase, clearTestDatabase, cleanupTestDatabase } from './setup.js';
 import userService from '../services/user.service.js';
 
 describe('Auth Endpoints', () => {
     let server;
 
     beforeAll(async () => {
-        await initializeTestDatabase();
-        server = await startServer();
-    });
-
-    afterAll(async () => {
-        await cleanupTestDatabase();
-        await server.close();
-        // Add a small delay to allow connections to close
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await setupTestDatabase();
+        server = app.listen(0); // Use any available port
     });
 
     beforeEach(async () => {
+        await clearTestDatabase();
         // Clear users before each test
         await userService.model.destroy({ where: {} });
     });
 
-    describe('POST /auth/register', () => {
-        const validUser = {
-            username: 'testuser',
-            email: 'test@example.com',
-            password: 'Test123!@#'
-        };
+    afterAll(async () => {
+        await server.close();
+        await cleanupTestDatabase();
+    });
 
+    const validUser = {
+        username: 'testuser',
+        email: 'test@example.com',
+        password: 'Test123!@#'
+    };
+
+    describe('POST /auth/register', () => {
         it('should create a new user', async () => {
             const res = await request(app)
                 .post('/auth/register')
@@ -42,6 +41,22 @@ describe('Auth Endpoints', () => {
             expect(res.body.user.email).toBe(validUser.email);
             expect(res.body.user).not.toHaveProperty('password');
             expect(res.headers['set-cookie']).toBeDefined();
+        });
+
+        it('should not create duplicate user', async () => {
+            // First create a user
+            await request(app)
+                .post('/auth/register')
+                .send(validUser);
+
+            // Try to create the same user again
+            const res = await request(app)
+                .post('/auth/register')
+                .send(validUser);
+
+            expect(res.status).toBe(400);
+            expect(res.body.success).toBe(false);
+            expect(res.body.message).toContain('already registered');
         });
 
         it('should not create user with invalid email', async () => {
@@ -69,50 +84,32 @@ describe('Auth Endpoints', () => {
             expect(res.body.success).toBe(false);
             expect(res.body.message).toContain('Password must be');
         });
-
-        it('should not create duplicate user', async () => {
-            // First create a user
-            await request(app)
-                .post('/auth/register')
-                .send(validUser);
-
-            // Try to create the same user again
-            const res = await request(app)
-                .post('/auth/register')
-                .send(validUser);
-
-            expect(res.status).toBe(400);
-            expect(res.body.success).toBe(false);
-            expect(res.body.message).toContain('already');
-        });
     });
 
     describe('POST /auth/login', () => {
-        const user = {
-            username: 'logintest',
-            email: 'login@example.com',
-            password: 'Login123!@#'
-        };
+        let user;
 
         beforeEach(async () => {
-            // Create a user before each login test
-            await request(app)
+            // Create a user before each test
+            const res = await request(app)
                 .post('/auth/register')
-                .send(user);
+                .send(validUser);
+            user = res.body.user;
         });
 
         it('should login with valid credentials', async () => {
             const res = await request(app)
                 .post('/auth/login')
                 .send({
-                    email: user.email,
-                    password: user.password
+                    email: validUser.email,
+                    password: validUser.password
                 });
 
             expect(res.status).toBe(200);
             expect(res.body.success).toBe(true);
             expect(res.body.user).toHaveProperty('id');
             expect(res.body.user.email).toBe(user.email);
+            expect(res.body.user).not.toHaveProperty('password');
             expect(res.headers['set-cookie']).toBeDefined();
         });
 
@@ -120,7 +117,7 @@ describe('Auth Endpoints', () => {
             const res = await request(app)
                 .post('/auth/login')
                 .send({
-                    email: user.email,
+                    email: validUser.email,
                     password: 'wrongpassword'
                 });
 
@@ -134,7 +131,7 @@ describe('Auth Endpoints', () => {
                 .post('/auth/login')
                 .send({
                     email: 'nonexistent@example.com',
-                    password: user.password
+                    password: validUser.password
                 });
 
             expect(res.status).toBe(401);
@@ -144,30 +141,28 @@ describe('Auth Endpoints', () => {
     });
 
     describe('POST /auth/logout', () => {
-        it('should clear the cookie on logout', async () => {
-            // First register and login to get the cookie
-            const user = {
-                username: 'logouttest',
-                email: 'logout@example.com',
-                password: 'Logout123!@#'
-            };
+        let authCookie;
 
+        beforeEach(async () => {
+            // Create and login user before each test
             await request(app)
                 .post('/auth/register')
-                .send(user);
+                .send(validUser);
 
             const loginRes = await request(app)
                 .post('/auth/login')
                 .send({
-                    email: user.email,
-                    password: user.password
+                    email: validUser.email,
+                    password: validUser.password
                 });
 
-            const cookie = loginRes.headers['set-cookie'];
+            authCookie = loginRes.headers['set-cookie'];
+        });
 
+        it('should clear the cookie on logout', async () => {
             const res = await request(app)
                 .post('/auth/logout')
-                .set('Cookie', cookie);
+                .set('Cookie', authCookie);
 
             expect(res.status).toBe(200);
             expect(res.body.success).toBe(true);
