@@ -1,5 +1,5 @@
 import axios from 'axios'
-import ENVS from '../config/env.js';
+import ENVS from '../../config/env.js';
 
 export const fetchExercise = async (url) => {
     const options = {

@@ -1,37 +1,32 @@
-import { Workout } from '../models/workout.model.js'
+import workoutService from '../services/workout.service.js';
 
-export async function getWorkouts(req, res) {
+export const getWorkouts = async (req, res) => {
     try {
-        const workouts = await Workout.find({}).populate('exercises')
-        res.status(200).json(workouts)
+        const workouts = await workoutService.getUserWorkouts(req.user.id);
+        res.status(200).json(workouts);
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        res.status(500).json({ message: error.message });
     }
-}
+};
 
 // Create a completely new workout, updating current workout will be different route
-export async function createWorkout(req, res) {
+export const createWorkout = async (req, res) => {
     try {
-        const { date, duration, exercises } = req.body
-
-        const workout = new Workout({
-            date,
-            duration,
-            exercises
-        })
-
-        await workout.save()
-
+        const workoutData = {
+            ...req.body,
+            userId: req.user.id
+        };
+        const workout = await workoutService.createWorkout(workoutData);
         res.status(201).json({
             success: true,
             message: 'Workout created successfully',
-            workout: {...workout._doc}
-        })
+            workout
+        });
     } catch (error) {
-        console.log(error)
+        console.error(error);
         res.status(500).json({
-            succes: false,
+            success: false,
             message: 'Internal server error'
-        })
+        });
     }
-}
+};
