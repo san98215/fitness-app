@@ -8,26 +8,32 @@ import {
     getRecentWorkouts,
     getWorkoutStats,
     addExerciseToWorkout,
-    removeExerciseFromWorkout
+    removeExerciseFromWorkout,
+    updateSets
 } from '../controllers/workout.controller.js'
 import { authenticate } from '../middleware/auth.middleware.js'
 
 const router = express.Router()
 
-// Protect all workout routes with authentication
+// Apply authentication middleware to all routes
 router.use(authenticate)
+
+// Routes that need to be matched before /:id
+router.get('/recent', getRecentWorkouts)
+router.get('/stats', getWorkoutStats)
 
 // Core CRUD routes
 router.get('/', getWorkouts)
-router.get('/:id', getWorkoutById)
 router.post('/', createWorkout)
+
+// Parameterized routes
+router.get('/:id', getWorkoutById)
 router.put('/:id', updateWorkout)
 router.delete('/:id', deleteWorkout)
 
-// Additional functionality routes
-router.get('/stats/recent', getRecentWorkouts)
-router.get('/stats/summary', getWorkoutStats)
+// Exercise management
 router.post('/:id/exercises', addExerciseToWorkout)
 router.delete('/:id/exercises/:exerciseId', removeExerciseFromWorkout)
+router.put('/:id/exercises/:exerciseId/sets', updateSets)
 
 export default router;

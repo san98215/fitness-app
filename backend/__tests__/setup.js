@@ -1,5 +1,6 @@
 import DatabaseService from '../services/database.service.js';
 import sequelize from '../../config/database.js';
+import '../models/index.js';  // Import models to ensure they are initialized
 
 export const setupTestDatabase = async () => {
     try {

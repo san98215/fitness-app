@@ -6,6 +6,7 @@ import cors from 'cors'
 // Routes
 import authRoutes from './routes/auth.route.js'
 import workoutRoutes from './routes/workout.route.js'
+import exerciseRoutes from './routes/exercise.route.js'
 
 import { ENVS } from '../config/env.js'
 import DatabaseService from './services/database.service.js'
@@ -21,7 +22,8 @@ app.use(cookieParser()) // Middleware to parse cookies
 
 // Define routes
 app.use("/auth", authRoutes)
-app.use("/workouts", workoutRoutes)
+app.use("/api/workouts", workoutRoutes)
+app.use("/api/exercises", exerciseRoutes)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

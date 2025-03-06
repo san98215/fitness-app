@@ -1,9 +1,19 @@
 import express from 'express'
-import { getExercies, searchExercises } from '../controllers/exercise.controller.js'
+import {
+    getExercises,
+    getExercisesByMuscleGroup,
+    getExercisesByCategory
+} from '../controllers/exercise.controller.js'
 
 const router = express.Router()
 
-router.get('/', getExercies)
-router.get('/:term', searchExercises)
+// Get all exercises
+router.get('/', getExercises)
+
+// Get exercises by muscle group
+router.get('/muscle-group/:muscleGroup', getExercisesByMuscleGroup)
+
+// Get exercises by category
+router.get('/category/:category', getExercisesByCategory)
 
 export default router;

@@ -3,24 +3,14 @@ import { User } from './user.model.js';
 import { Workout } from './workout.model.js';
 import { Exercise } from './exercise.model.js';
 import { WorkoutExercise } from './workout-exercise.model.js';
+import { Set } from './set.model.js';
 
 // Initialize models
-const models = {
-    User,
-    Workout,
-    Exercise,
-    WorkoutExercise
-};
-
-// Initialize each model
-Object.values(models).forEach(model => {
-    if (model.init) {
-        model.init(model.schema, { 
-            sequelize,
-            ...model.options
-        });
-    }
-});
+User.init(User.schema, { sequelize, ...User.options });
+Workout.init(Workout.schema, { sequelize, ...Workout.options });
+Exercise.init(Exercise.schema, { sequelize, ...Exercise.options });
+WorkoutExercise.init(WorkoutExercise.schema, { sequelize, ...WorkoutExercise.options });
+Set.init(Set.schema, { sequelize, ...Set.options });
 
 // Define associations
 Workout.belongsTo(User, {
@@ -33,6 +23,7 @@ User.hasMany(Workout, {
     as: 'workouts'
 });
 
+// Workout-Exercise associations
 Workout.belongsToMany(Exercise, {
     through: WorkoutExercise,
     as: 'exercises',
@@ -45,9 +36,43 @@ Exercise.belongsToMany(Workout, {
     foreignKey: 'exerciseId'
 });
 
+// WorkoutExercise associations
+Workout.hasMany(WorkoutExercise, {
+    foreignKey: 'workoutId',
+    as: 'workoutExercises'
+});
+
+WorkoutExercise.belongsTo(Workout, {
+    foreignKey: 'workoutId',
+    as: 'workout'
+});
+
+Exercise.hasMany(WorkoutExercise, {
+    foreignKey: 'exerciseId',
+    as: 'workoutExercises'
+});
+
+WorkoutExercise.belongsTo(Exercise, {
+    foreignKey: 'exerciseId',
+    as: 'exercise'
+});
+
+// Set associations
+WorkoutExercise.hasMany(Set, {
+    foreignKey: 'workoutExerciseId',
+    as: 'sets'
+});
+
+Set.belongsTo(WorkoutExercise, {
+    foreignKey: 'workoutExerciseId',
+    as: 'workoutExercise'
+});
+
+// Export models
 export {
     User,
     Workout,
     Exercise,
-    WorkoutExercise
+    WorkoutExercise,
+    Set
 }; 
